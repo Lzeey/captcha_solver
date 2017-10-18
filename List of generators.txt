@@ -1,0 +1,4 @@
+claptcha - https://github.com/kuszaj/claptcha
+captcha - https://pypi.python.org/pypi/captcha/0.2.4
+captchaimage - https://pypi.python.org/pypi/captchaimage
+
