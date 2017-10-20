@@ -41,7 +41,7 @@ if __name__ == "__main__":
             os.mkdir(tgt_dir)
     
     bar = progressbar.ProgressBar()
-    num_images = 20000
+    num_images = 100000
     print("Generating using Claptcha")
     for i in bar(range(num_images)):
         font = random.choice(fonts)
@@ -70,7 +70,9 @@ if __name__ == "__main__":
                 continue
         elif selection == 1:
             try:
-                captcha_gen.write(text, os.path.join(DATA_DIR, str(text_len), text+'.jpg'))
+                #captcha_gen.write(text, os.path.join(DATA_DIR, str(text_len), text+'.jpg'))
+                image = captcha_gen.generate_image(text)
+                image.save(os.path.join(DATA_DIR, str(text_len), text+'.jpg'))
             except FileNotFoundError as e:
                 print(e)
                 continue

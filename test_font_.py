@@ -36,7 +36,7 @@ if __name__ == "__main__":
     bar = progressbar.ProgressBar()
     num_images = 200000
     
-    for font in bar(fonts):
+    for font in bar(fonts[:2]):
     #for i in bar(range(num_images)):
         font = random.choice(fonts)
         
@@ -53,6 +53,8 @@ if __name__ == "__main__":
         image.save(os.path.join(DATA_DIR, font +'.jpg'))
       
         captcha_gen = ImageCaptcha(fonts=[os.path.join(FONT_DIR, font)])
-        captcha_gen.write(text, os.path.join(DATA_DIR, font+'_.jpg'))
+        img = captcha_gen.generate_image(text)
+        img.save(os.path.join(DATA_DIR, font+'_.jpg'))
+        #captcha_gen.write(text, os.path.join(DATA_DIR, font+'_.jpg'))
         
         
