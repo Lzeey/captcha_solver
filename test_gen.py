@@ -14,7 +14,7 @@ DATA_DIR = "data_val"
 
 img_width = 150
 img_height = 60
-char_set = ('01234567890'
+char_set = ('0123456789'
                 'abcdefghijklmnopqrstuvwxyz'
                 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
                 #'!@#$%^&*')
