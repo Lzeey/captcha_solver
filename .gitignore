@@ -3,4 +3,4 @@ font_test/*
 data/*
 data_val/*
 data_TFrecord/*
-
+data_npy/*

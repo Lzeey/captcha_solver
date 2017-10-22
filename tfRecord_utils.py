@@ -18,9 +18,9 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 
 # image supposed to have shape: 480 x 640 x 3 = 921600
-IMAGE_PATH = 'data'
+IMAGE_PATH = 'data_val'
 TFR_PATH = 'data_TFrecord'
-TFR_FILE = 'train_TFrecord.tf'
+TFR_FILE = 'val_TFrecord.tf'
 IMG_W = 150
 IMG_H = 60
 char_set = ('_0123456789'
@@ -80,12 +80,10 @@ def write_to_tfrecord(label, label_string, length, binary_image, writer):
 #    shape, binary_image = get_image_binary(image_file)
 #    write_to_tfrecord(label, shape, binary_image, tfrecord_file)
 
-def write_tfrecord(label, label_string, length, image_file, writer):
-    shape, binary_image = get_image_binary(image_file)
-    write_to_tfrecord(label, label_string, length, binary_image, writer)
-
-def read_from_tfrecord(filenames, batch_size=None):
-    tfrecord_file_queue = tf.train.string_input_producer(filenames, name='queue')
+def read_file_format(tfrecord_file_queue):
+    """Read and decode file format here
+    Input: string_input_produce from tf
+    Output: Tensor for example"""
     reader = tf.TFRecordReader()
     _, tfrecord_serialized = reader.read(tfrecord_file_queue)
 
@@ -105,41 +103,57 @@ def read_from_tfrecord(filenames, batch_size=None):
     #label_string = tfrecord_features['label_string']
     #length = tfrecord_features['length']
     
-    
     #shape = tf.decode_raw(tfrecord_features['shape'], tf.int32)
     # the image tensor is flattened out, so we have to reconstruct the shape
     image = tf.reshape(image, (IMG_H, IMG_W, 3))
+    label = tf.reshape(label, (7,)) #To force size specification
+    return image, label
     
+def write_tfrecord(label, label_string, length, image_file, writer):
+    shape, binary_image = get_image_binary(image_file)
+    write_to_tfrecord(label, label_string, length, binary_image, writer)
+
+def read_from_tfrecord(filenames, batch_size=None, shuffle=True):
+    tfrecord_file_queue = tf.train.string_input_producer(filenames, 
+                                                         name='queue',
+                                                         shuffle=shuffle)
     #label = tfrecord_features['label']
+    image, label = read_file_format(tfrecord_file_queue)
+    if batch_size: #Return multiple samples
+        image, label = read_file_format(tfrecord_file_queue)
+        #example_list = [read_file_format(fil)]
     
-    if batch_size:
         # See recommendations in http://web.stanford.edu/class/cs20si/lectures/notes_09.pdf
         min_after_dequeue = 10 * batch_size
         capacity = 20 * batch_size 
-        label = tf.reshape(label, (7,)) #To force size specification
         images, labels = tf.train.shuffle_batch([image, label], 
                                                 batch_size=batch_size,
                                                 capacity=capacity,
-                                                min_after_dequeue=min_after_dequeue)
+                                                min_after_dequeue=min_after_dequeue,)
+                                                #num_threads=4)
         return images, labels
-    
-    return image, label #, label_string, length
+    else:
+        image, label = read_file_format(tfrecord_file_queue)
+        return image, label #, label_string, length
 
 def read_batch_tfrecords(tfrecord_files, batch_size=32):
     images, labels = read_from_tfrecord(tfrecord_files, batch_size=32)
     with tf.Session() as sess:
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(coord=coord)
-        images, labels = sess.run([images, labels])
+        
+        for j in range(5):
+            images_np, labels_np = sess.run([images, labels])
+            #FOR DEBUGGING
+            for i in range(batch_size):
+                print(labels_np[i])
+                print(''.join(char_set[idx] for idx in labels_np[i]).rstrip('_'))
+                plt.imshow(images_np[i])
+                plt.show()
         coord.request_stop()
         coord.join(threads)
     
-    #FOR DEBUGGING
-    for i in range(batch_size):
-        print(labels[i])
-        print(''.join(char_set[idx] for idx in labels[i]).rstrip('_'))
-        plt.imshow(images[i])
-        plt.show()
+
     
     
 def read_tfrecord(tfrecord_file):
@@ -162,37 +176,21 @@ def read_tfrecord(tfrecord_file):
     plt.show() 
 
 def main():
-    # assume the image has the label Chihuahua, which corresponds to class number 1
-    label = 1 
-    image_file = IMAGE_PATH + 'friday.jpg'
-    tfrecord_file = IMAGE_PATH + 'friday.tfrecord'
-    write_tfrecord(label, image_file, tfrecord_file)
-    read_tfrecord(tfrecord_file)
-
-if __name__ == '__main__':
-    
     #Grab files here
     image_files = list(os.walk(IMAGE_PATH))[1:]
     
-    #TFR_FILEPATH = os.path.join(TFR_PATH, TFR_FILE)
-    #writer = tf.python_io.TFRecordWriter(TFR_FILEPATH)
-
-    
+    TFR_FILEPATH = os.path.join(TFR_PATH, TFR_FILE)
+    writer = tf.python_io.TFRecordWriter(TFR_FILEPATH)
     for path, _, files in tqdm(image_files, desc='Folder loop'):
-        folder_number = os.path.split(path)[-1]
-        TFR_FILE_PATH = os.path.join(TFR_PATH, TFR_FILE + folder_number)
-        writer = tf.python_io.TFRecordWriter(TFR_FILE_PATH)
+        #folder_number = os.path.split(path)[-1]
+        #TFR_FILE_PATH = os.path.join(TFR_PATH, TFR_FILE + folder_number)
+        #writer = tf.python_io.TFRecordWriter(TFR_FILE_PATH)
         for f in tqdm(files, desc='File loop', leave=False):
-            #print(os.path.join(path,f[:-4]))
-            
             #Insert transformation here - Convert label to DATA
             label_string = f[:-4]
             #label = 1
             length = len(label_string)
             label = np.array([char_map[char] for char in label_string.ljust(7, '_')]).astype(np.int32)
-            
-            #get_image_binary(os.path.join(path, f))
-            
             write_tfrecord(label.tobytes(),
                            label_string.encode('utf-8'),
                            length,
@@ -200,19 +198,17 @@ if __name__ == '__main__':
                            writer)
             #break
         #break
-        
-        writer.close()
-        
+        #writer.close()
+    writer.close()
+   
+
+if __name__ == '__main__':
+    
+    #main() 
         
     #Now try reading in batches
     file_names = [os.path.join(TFR_PATH, f) for f in os.listdir(TFR_PATH) if f.startswith('train')]
-    
+    file_names = ['data_TFrecord/val_TFrecord.tf']
     #Batch reading - TEST
     read_batch_tfrecords(file_names, batch_size=16)
     
-    #Single record reading
-    #read_tfrecord(os.path.join(TFR_PATH, TFR_FILE))
-    
-    #Test writing 1 file to TFrecord
-    
-    #main()
