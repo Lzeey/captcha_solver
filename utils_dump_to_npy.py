@@ -19,6 +19,8 @@ import matplotlib.pyplot as plt
 # image supposed to have shape: 480 x 640 x 3 = 921600
 IMAGE_PATH = 'data'
 OUTPUT_PATH = 'data_npy'
+OUTPUT_NAME = 'train'
+PAD_CHAR = 7 #Ensure that labels are padded to that length
 IMG_W = 150
 IMG_H = 60
 char_set = ('_0123456789'
@@ -40,22 +42,17 @@ def get_image(filename):
     #print(shape)
     return image # convert image to raw data bytes in the array.
 
-def main():
-    #Grab files here
-
-    #return labels
-            #break
-        #break
-    print()
-   
-
-if __name__ == '__main__':
+def main(IMAGE_PATH=IMAGE_PATH,
+         OUTPUT_PATH=OUTPUT_PATH,
+         OUTPUT_NAME=OUTPUT_NAME):
     
     if not os.path.exists(OUTPUT_PATH):
         os.mkdir(OUTPUT_PATH)
     
-    image_files = list(os.walk(IMAGE_PATH))[1:]
-        
+    image_files = list(os.walk(IMAGE_PATH))
+    if len(image_files) > 1: #There are subdirectories
+          image_files = image_files[1:]
+    
     labels = []
     full_files = []
     for path, _, files in image_files:
@@ -70,9 +67,16 @@ if __name__ == '__main__':
     labels = np.array(labels)
     images = np.array([get_image(f) for f in tqdm(full_files)])
     
-    np.save(os.path.join(OUTPUT_PATH, 'train_y.npy'), labels)
-    np.save(os.path.join(OUTPUT_PATH, 'train_X.npy'), images)
+    np.save(os.path.join(OUTPUT_PATH, OUTPUT_NAME + '_y.npy'), labels)
+    np.save(os.path.join(OUTPUT_PATH, OUTPUT_NAME + '_X.npy'), images)
     
+    print("All done")
+    return 0
+   
+
+if __name__ == '__main__':
+
+    main()
     #Batch reading - TEST
 
     
