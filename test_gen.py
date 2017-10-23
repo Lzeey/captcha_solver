@@ -19,7 +19,7 @@ char_set = ('0123456789'
                 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
                 #'!@#$%^&*')
 max_len = 7
-min_len = 3
+min_len = 7
 
 def gen_random_string(char_set, length=None):
     if not length:
